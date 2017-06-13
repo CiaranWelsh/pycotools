@@ -14,10 +14,19 @@ import re
 from collections import OrderedDict
 from random import randint
 import os
+import aenum
 
 LOG=logging.getLogger(__name__)
 
-
+class States():
+    '''
+    
+    '''
+    BLACK=0
+    WHITE=1
+    GREEN=2
+        
+        
 
 
 class State(object):
@@ -120,7 +129,156 @@ class ConstantProduction(Behaviour):
         return '<class ConstantProduction>'
         
         
+class Cell2(object):
+    '''
+    Cell objects are components of the lattice
     
+    args:
+        state:
+            Symbolic representation of cell state
+    kwargs:
+        x: 
+            x coordinate. Defuault=None
+        y:
+            y coordinate. Default=None
+        z: 
+            z coordinate. Devault=None
+            
+    ===================
+    Additional attributes:
+        coordinates:
+            tuple containing (x,y,z), the position of the cell
+        
+    '''
+    def __init__(self,state,x=None,y=None,z=None,behaviours=[]):
+        self.state=state
+        self.state=self.set_state(state)
+        self.x=x
+        self.y=y
+        self.z=z
+        self.behaviours=behaviours
+        self.coordinates=[]
+        
+        
+        if self.x==None:
+            raise TypeError('x cannot be None')
+        
+        if self.y== None and self.z==None:
+            self.coordinates=self.x#]=state
+                            
+        elif self.z==None:
+            self.coordinates=(self.x,self.y)#=state
+        
+        elif self.x!=None and self.y!=None and self.z!=None:
+            self.coordinates=(self.x,self.y,self.z)#]=state
+                             
+        self.dimensions=self.get_num_dimensions()
+                             
+        self.neighbours=self.define_neighbours()
+        
+        
+        
+    def get_num_dimensions(self):
+        boolean= [isinstance(i,int) for i in [self.x,self.y,self.z]]
+        if boolean ==[False,False,False]:
+            raise Errors.InputError('Need to specific at least an x dimension')            
+        elif boolean == [True,False,False]:
+            return 1
+        elif boolean == [True,True,False]:
+            return 2
+        elif boolean == [True,True,True]:
+            return 3
+        else:
+            LOG.critical('Something has gone badly wrong')
+            raise Exception('Something is wrong (I like to be helpful)')
+        
+        
+                             
+                             
+    def define_neighbours(self):
+        neighbours={}
+        if self.dimensions==1:
+            neighbours['W']=self.x-1
+            neighbours['E']=self.x+1
+        elif self.dimensions==2:
+            neighbours['NW']= (self.x-1,self.y-1)
+            neighbours['N']=(self.x,self.y-1)
+            neighbours['NE']=(self.x+1,self.y-1)
+            neighbours['E']=(self.x-1,self.y)
+            neighbours['SE']=(self.x+1,self.y)
+            neighbours['S']=(self.x-1,self.y+1)
+            neighbours['SW']=(self.x,self.y+1)
+            neighbours['E']=(self.x+1,self.y+1)
+        elif self.dimensions==3:
+            neighbours['FNW']= (self.x-1,self.y-1,self.z+1)
+            neighbours['FN']=(self.x,self.y-1,self.z+1)
+            neighbours['FNE']=(self.x+1,self.y-1,self.z+1)
+            neighbours['FE']=(self.x-1,self.y,self.z+1)
+            neighbours['FSE']=(self.x+1,self.y,self.z+1)
+            neighbours['FS']=(self.x-1,self.y+1,self.z+1)
+            neighbours['FSW']=(self.x,self.y+1,self.z+1)
+            neighbours['FE']=(self.x+1,self.y+1,self.z+1)
+            neighbours['F']=(self.x,self.y,self.z+1)
+            
+            neighbours['MNW']= (self.x-1,self.y-1,self.z)
+            neighbours['MN']=(self.x,self.y-1,self.z)
+            neighbours['MNE']=(self.x+1,self.y-1,self.z)
+            neighbours['ME']=(self.x-1,self.y,self.z)
+            neighbours['MSE']=(self.x+1,self.y,self.z)
+            neighbours['MS']=(self.x-1,self.y+1,self.z)
+            neighbours['MSW']=(self.x,self.y+1,self.z)
+            neighbours['ME']=(self.x+1,self.y+1,self.z)
+            
+            neighbours['BNW']= (self.x-1,self.y-1,self.z-1)
+            neighbours['BN']=(self.x,self.y-1,self.z-1)
+            neighbours['BNE']=(self.x+1,self.y-1,self.z-1)
+            neighbours['BE']=(self.x-1,self.y,self.z-1)
+            neighbours['BSE']=(self.x+1,self.y,self.z-1)
+            neighbours['BS']=(self.x-1,self.y+1,self.z-1)
+            neighbours['BSW']=(self.x,self.y+1,self.z-1)
+            neighbours['BE']=(self.x+1,self.y+1,self.z-1)
+        else:
+            LOG.critical('Not 1,2 or 3 dimesions. Something is seriously wrong')
+        return neighbours
+        
+    def set_state(self,state):
+        '''
+        
+        '''
+        return State(state)
+    
+    def get_state(self):
+        return self.state
+    
+    def __repr__(self):
+        return str('Cell({})'.format(self.state))
+
+    def __getitem__(self,idx):
+        return self.coordinates[idx]
+    
+    def __setitem__(self,idx,item):
+        self.coordinates[idx]=item
+        
+        
+    def update2(self):
+        for i in self.behaviours:
+            if i=='-> White<5> : constant_production':
+                if self.coordinates == 5:
+                    self.state=State('White')
+                    
+            elif i=='Black -> White : transition':
+                if self.state.label == 'Black':
+                    self.state=State('White')
+                    
+    def update(self):
+        for i in self.behaviours:
+            LOG.debug('Current State = {}'.format(self.state))
+            LOG.debug('Updating behaviour "{}"'.format(i))
+            args,rule=i.split(':')
+            behaviour= Behaviour.factory(args,rule.strip())
+            LOG.debug('Behaviour determined to be {}'.format(behaviour))
+            self.state=behaviour.update(self)
+            LOG.debug('New state is: {}'.format(self.state))
     
     
 
@@ -558,14 +716,10 @@ if __name__=='__main__':
     '''
     
     
-    c=Cell('Black',x=4,behaviours=['-> White<4> : constant_production',
-                                   'Black-> White : transition'])
-    print c
-    c.update()
-    print c
-#    L=Lattice(c,x=20)
-#    print L
-
+#    c=Cell('Black',x=4,behaviours=['-> White<4> : constant_production',
+#                                   'Black-> White : transition'])
+    
+    colours=aenum.Enum('Colours','Red Blue Green')
 
 
 
