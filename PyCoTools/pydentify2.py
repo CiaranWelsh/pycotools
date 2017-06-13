@@ -217,10 +217,6 @@ class ProfileLikelihood():
             raise Errors.Errors.InputError('You have selected {} processes but your computer only has {} available'.format(self.kwargs.get('NumProcesses'),multiprocessing.cpu_count()))
         
         assert self.kwargs.get('Log') in ['false','true']
-#        if self.kwargs.get('Log')=='false':
-#            self.kwargs['Log']=str(0)
-#        else:
-#            self.kwargs['Log']=str(1)
 
         
         self.cps_dct=self.copy_copasi_files_and_insert_parameters()
@@ -461,22 +457,9 @@ class ProfileLikelihood():
         res={}
         for i in self.cps_dct.keys():
             for j in self.cps_dct[i]:
-#                args=['CopasiSE',self.cps_dct[i][j]]
-                if self.kwargs.get('Verbose')=='true':
-                    print 'running {}'.format(j)
+                LOG.debug( 'running {}'.format(j))
                 res[self.cps_dct[i][j]]= pycopi.Run(self.cps_dct[i][j],Task='scan',MaxTime=self.kwargs.get('MaxTime'),Mode='slow').run()
         return res
-
-#    def run_fast(self):
-#        '''
-#        self.cps_dct is a nested dictionary dct[index1][index2]=filename
-#        CopasiSE is a program for simulating mathematical models using the terminal/cmd
-#        
-#        '''
-#        for i in self.cps_dct.keys():
-#            for j in self.cps_dct[i]:
-#                subprocess.Popen('CopasiSE {}'.format(self.cps_dct[i][j]))
-#        return self.cps_dct
         
     def multi_run(self):
         def run(x):
@@ -667,6 +650,7 @@ class Plot():
         os.chdir(os.path.dirname(self.copasi_file))
 
         options={#report variables
+                 'ExperimentFiles':None,
                  'ParameterPath':None,                 
                  'Index':-1,
                  'NumProcesses':1, 
@@ -697,8 +681,7 @@ class Plot():
                  'PlotParameter':None,
                  'DotSize':4,
                  'Separator':'\t',
-                 'Log10':'true',
-                 
+                 'Log10':'false',
                  'UsePickle':'false',
                  'OverwritePickle':'false',
                  }
@@ -707,6 +690,9 @@ class Plot():
             assert i in options.keys(),'{} is not a keyword argument for Plot'.format(i)
         options.update( kwargs) 
         self.kwargs=options       
+        
+        if self.kwargs['ExperimentFiles']==None:
+            self.kwargs['ExperimentFiles']=self.get_experiment_files_in_use()
     
         assert isinstance(self.kwargs.get('NumProcesses'),int)
         if self.kwargs.get('NumProcesses')!=0:
@@ -797,6 +783,12 @@ class Plot():
         assert self.kwargs.get('SaveFig') in ['false','true']
         assert self.kwargs.get('MultiPlot') in ['false','true']
         assert self.kwargs.get('QuantityType') in ['concentration','partical_numbers']
+        
+        if self.kwargs['ExperimentFiles']==None:
+            LOG.critical('Experimental Files not None')
+            self.kwargs['ExperimentFiles']=self.get_experiment_files_in_use()
+            
+            
         self.PL_dir=self.get_PL_dir()
         self.indices=self.get_index_dirs()
         self.result_paths=self.get_results()
@@ -849,7 +841,7 @@ class Plot():
         self.plot_chi2_CI()
         CI=self.calc_chi2_CI()
         for i in CI:
-            print 'Confidence level for Index {} is {} or {} on a Log10 scale'.format(i,CI[i],numpy.log10(CI[i]))
+            LOG.info( 'Confidence level for Index {} is {} or {} on a Log10 scale'.format(i,CI[i],numpy.log10(CI[i])))
             
     def get_PL_dir(self):
         '''
@@ -892,7 +884,11 @@ class Plot():
         query='//*[@name="File Name"]'
         l=[]
         for i in self.copasiML.xpath(query):
-            l.append(i.attrib['value'])
+            f=os.path.abspath(i.attrib['value'])
+            if os.path.isfile(f)!=True:
+                raise Errors.InputError('Experimental files in use cannot be automatically determined. Please give a list of experiment file paths to the ExperimentFiles keyword'.format())
+            l.append(os.path.abspath(i.attrib['value']))
+        
         return l
         
         
@@ -909,14 +905,18 @@ class Plot():
         
     def parse_results(self):
         df_dict={}
-        experiment_keys= [os.path.splitext(i)[0] for i in self.get_experiment_files_in_use()]
+
+        experiment_keys= [os.path.splitext(i)[0] for i in self.kwargs['ExperimentFiles']]
         for i in self.result_paths:
             df_dict[i]={}
             for j in self.result_paths[i]:
                 if j not in experiment_keys:
-                    data= pandas.read_csv(self.result_paths[i][j],sep=self.kwargs['Separator'])
+                    data= pandas.read_csv(self.result_paths[i][j],sep='\t')#self.kwargs['Separator'])
                     best_value_str='TaskList[Parameter Estimation].(Problem)Parameter Estimation.Best Value'
                     data=data.rename(columns={best_value_str:'RSS'})
+#                    if self.kwargs['Log10']=='true':
+#                        df_dict[i][j]=numpy.log10(data)
+#                    else:
                     df_dict[i][j]=data
         return df_dict
 #        
@@ -946,7 +946,7 @@ class Plot():
         '''
         returns number of data points in your data files
         '''
-        experimental_data= [pandas.read_csv(i,sep=self.kwargs['Separator']) for i in self.get_experiment_files_in_use()]
+        experimental_data= [pandas.read_csv(i,sep=self.kwargs['Separator']) for i in self.kwargs['ExperimentFiles']]
         l=[]        
         for i in experimental_data:
             l.append( i.shape[0]*(i.shape[1]-1))
@@ -965,7 +965,7 @@ class Plot():
         else:
             PED= PEAnalysis.ParsePEData(self.kwargs.get('ParameterPath'),
                                         UsePickle=self.kwargs['UsePickle'],
-                                        OverwritePickle=self.kwargs['OverwritePickle'])
+                                        OverwritePickle='false')#self.kwargs['OverwritePickle'])
             if isinstance(self.kwargs.get('Index'),int):
                 RSS[self.kwargs.get('Index')]=PED.data.iloc[self.kwargs.get('Index')]['RSS']
             elif isinstance(self.kwargs.get('Index'),list):
@@ -1049,23 +1049,6 @@ class Plot():
                 best_parameter_value= self.GMQ.get_IC_cns()[parameter]['value']
 
 
-
-
-
-        
-#            else:
-#                best_parameter_value=self.GMQ.get_IC_cns()[parameter]['value']
-            
-#        if st in [Misc.RemoveNonAscii(i).filter for i in self.GMQ.get_IC_cns().keys()] or self.GMQ.get_IC_cns().keys():
-#            if self.kwargs.get('QuantityType')=='concentration':
-#                best_parameter_value=self.GMQ.get_IC_cns()[parameter]['concentration']
-#            else:
-#                best_parameter_value=self.GMQ.get_IC_cns()[parameter]['value']
-#        if st in [Misc.RemoveNonAscii(i).filter for i in self.GMQ.get_local_kinetic_parameters_cns()] or self.GMQ.get_local_kinetic_parameters_cns().keys():
-#            best_parameter_value=self.GMQ.get_local_kinetic_parameters_cns()[parameter]['value']
-#
-#        if st in [Misc.RemoveNonAscii(i).filter for i in self.GMQ.get_global_quantities()] or self.GMQ.get_global_quantities().keys():
-#            best_parameter_value= self.GMQ.get_global_quantities()[parameter]
         try:
             return best_parameter_value
         except UnboundLocalError:
@@ -1216,19 +1199,4 @@ class Plot():
 
         
 if __name__=='__main__':
-    f=r'D:\MPhil\Python\My_Python_Modules\Modelling_Tools\PyCoTools\Tests\VilarModel2006pycopitestModel.cps'
-    
-    r=r'D:\MPhil\Python\My_Python_Modules\Modelling_Tools\PyCoTools\Tests\vilarTimeCourse.txt'
-    r2=r'D:\MPhil\Python\My_Python_Modules\Modelling_Tools\PyCoTools\Tests\vilarTimeCourse2.txt'
-        
-    p=r'D:\MPhil\Python\My_Python_Modules\Modelling_Tools\PyCoTools\Tests\output.txt'
-    
-    t=r'D:\MPhil\Python\My_Python_Modules\Modelling_Tools\PyCoTools\Tests\cheese.txt'
- 
-
-
-
-
-
-
-
+    pass

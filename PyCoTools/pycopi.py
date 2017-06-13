@@ -763,7 +763,7 @@ class Reports():
         #for global quantities 
         if self.kwargs.get('GlobalQuantities')!=None:
             for i in self.kwargs.get('GlobalQuantities'):
-                cn= self.GMQ.get_global_quantities_cns()[i]['cn']+',Reference=InitialValue'
+                cn= self.GMQ.get_global_quantities_cns()[i]['cn']+',Reference=Value'
                 Object=etree.SubElement(table,'Object')
                 Object.attrib['cn']=cn
         return self.copasiML
@@ -1407,6 +1407,7 @@ class ExperimentMapper():
         TimeRole={'type': 'unsignedInteger', 'name': 'Role', 'value': '3'}
         DepentantVariableRole={'type': 'unsignedInteger', 'name': 'Role', 'value': '2'}
         IndepentantVariableRole={'type': 'unsignedInteger', 'name': 'Role', 'value': '1'}
+        IgnoredVariableRole={'type': 'unsignedInteger', 'name': 'Role', 'value': '0'}
         
         for i in range(int(num_columns)):
             map_group=etree.SubElement(Map,'ParameterGroup',attrib={'name':(str(i))})
@@ -1437,6 +1438,33 @@ class ExperimentMapper():
                             raise Errors.ExperimentMappingError('{} not in ICs, global vars or local variables'.format(obs[i]))
                         etree.SubElement(map_group,'Parameter',attrib=IndepentantVariableRole)
                         
+                    elif obs[i][:-6]!='indep':
+                        if obs[i] in ICs.keys():
+                            cn=ICs[obs[i]]['cn']+',Reference=Concentration'
+                            dependent_ICs={'type': 'cn', 'name': 'Object CN', 'value':cn}
+                            etree.SubElement(map_group,'Parameter',attrib=dependent_ICs)
+                            
+                        elif obs[i] in glob.keys():
+                            cn=glob[obs[i]]['cn']+',Reference=Value'
+                            dependent_globs={'type': 'cn', 'name': 'Object CN', 'value':cn} 
+                            etree.SubElement(map_group,'Parameter',attrib=dependent_globs)
+                            '''
+                            Note that you don't ever map data to reaction parameters therefore the commented
+                            out block below is not needed. Don't delete until you are sure of it though...
+                            '''
+                        elif obs[i] in loc.keys():
+                            cn=loc[obs[i]['cn']]+',Reference=Value'
+                            dependent_locs={'type': 'cn', 'name': 'Object CN', 'value':cn}
+                            etree.SubElement(map_group,'Parameter',attrib=dependent_locs)
+                            
+                        elif obs[i] not in loc.keys() + glob.keys() + ICs.keys():
+                            LOG.warning('{}not in model and has not been mapped. Please check spelling and try again'.format(obs[i]))
+
+                        else:
+                            raise Errors.ExperimentMappingError('''\'{}\' mapping error. In the copasi GUI its possible to have same name for two species provided they are in different compartments. In this API, having non-unique species identifiers leads to errors in mapping experimental to model variables'''.format(obs[i]))
+                        etree.SubElement(map_group,'Parameter',attrib=DepentantVariableRole)
+                        
+                        
                     else:
                         if obs[i] in ICs.keys():
                             cn=ICs[obs[i]]['cn']+',Reference=Concentration'
@@ -1457,11 +1485,12 @@ class ExperimentMapper():
                             etree.SubElement(map_group,'Parameter',attrib=dependent_locs)
                             
                         elif obs[i] not in loc.keys() + glob.keys() + ICs.keys():
-                            LOG.info('{}not in model and has not been mapped. Please check spelling and try again'.format(obs[i]))
+                            LOG.warning('{}not in model and has not been mapped. Please check spelling and try again'.format(obs[i]))
 
                         else:
                             raise Errors.ExperimentMappingError('''\'{}\' mapping error. In the copasi GUI its possible to have same name for two species provided they are in different compartments. In this API, having non-unique species identifiers leads to errors in mapping experimental to model variables'''.format(obs[i]))
-                        etree.SubElement(map_group,'Parameter',attrib=DepentantVariableRole)
+                        etree.SubElement(map_group,'Parameter',attrib=IgnoredVariableRole)
+
 
             else:
                 '''
@@ -1486,6 +1515,27 @@ class ExperimentMapper():
                         raise Errors.ExperimentMappingError('{} not in ICs, global vars or local variables'.format(obs[i]))
                     etree.SubElement(map_group,'Parameter',attrib=IndepentantVariableRole)
                     
+                elif obs[i][-6:]!='_indep':
+                    if obs[i] in ICs.keys():
+                        cn=ICs[obs[i]]['cn']+',Reference=Concentration'
+                        dependent_ICs={'type': 'cn', 'name': 'Object CN', 'value':cn}
+                        etree.SubElement(map_group,'Parameter',attrib=dependent_ICs)
+                        
+                    elif obs[i] in glob.keys():
+                        cn=glob[obs[i]]['cn']+',Reference=Value'
+                        dependent_globs={'type': 'cn', 'name': 'Object CN', 'value':cn} 
+                        etree.SubElement(map_group,'Parameter',attrib=dependent_globs)
+                        '''
+                        Note that you don't ever map data to reaction parameters therefore the commented
+                        out block below is not needed. Don't delete until you are sure of it though...
+                        '''
+                    elif obs[i] in loc.keys():
+                        cn=loc[obs[i]['cn']]+',Reference=Value'
+                        dependent_locs={'type': 'cn', 'name': 'Object CN', 'value':cn}
+                        etree.SubElement(map_group,'Parameter',attrib=dependent_locs)
+                    else:
+                        raise Errors.ExperimentMappingError('''\'{}\' mapping error. In the copasi GUI its possible to have same name for two species provided they are in different compartments. In this API, having non-unique species identifiers leads to errors in mapping experimental to model variables'''.format(obs[i]))
+                    etree.SubElement(map_group,'Parameter',attrib=IgnoredVariableRole)
                 else:
                     if obs[i] in ICs.keys():
                         cn=ICs[obs[i]]['cn']+',Reference=Concentration'
@@ -2816,9 +2866,7 @@ class ParameterEstimation():
 
         
     def read_item_template(self):
-        if os.path.isfile(self.kwargs.get('ConfigFilename'))==False:
-            self.write_item_template()
-        assert os.path.isfile(self.kwargs.get('ConfigFilename'))==True,'ItemTemplate file does not exist. Run \'write_item_template\' method and modify it how you like then rerun this method'
+        assert os.path.isfile(self.kwargs.get('ConfigFilename'))==True,'ConfigFile does not exist. Run \'write_item_template\' method and modify it how you like then rerun this method'
         return pandas.read_excel(self.kwargs.get('ConfigFilename'))
     
     def add_fit_item(self,item):
@@ -3627,6 +3675,9 @@ class Run():
         elif self.kwargs.get('Task')=='steady_state':
             self.kwargs['Task']='steadystate'        
         
+        if os.path.isfile(self.copasi_file)!=True:
+            raise Errors.FileDoesNotExistError('{} is not a file'.format(self.copasi_file))
+            
         
         self.copasiML=self.set_task()
         self.save()
@@ -3644,7 +3695,9 @@ class Run():
 
     def multi_run(self):
         def run(x):
-            subprocess.Popen('CopasiSE "{}"'.format(x))
+            if os.path.isfile(x)!=True:
+                raise Errors.FileDoesNotExistError('{} is not a file'.format(self.copasi_file))
+            subprocess.Popen(['CopasiSE',self.copasi_file])
         Process(run(self.copasi_file))
         
         
@@ -4383,9 +4436,12 @@ class RunMultiplePEs():
         sub_copasi_files_dct={}
         copasi_path,copasi_filename=os.path.split(self.copasi_file)
         for i in range(self.kwargs['CopyNumber']):
-            new_cps=os.path.join(copasi_path,copasi_filename[:-4]+'{}.cps'.format(str(i)))
+            new_cps=os.path.join(copasi_path,copasi_filename[:-4]+'_{}.cps'.format(str(i)))
             shutil.copy(self.copasi_file,new_cps)
             sub_copasi_files_dct[i]= new_cps
+        
+        #sub_copasi_files_dct[0] = self.copasi_file
+        
         
         with open(self.copasi_file_pickle,'w')as f:
             pickle.dump(sub_copasi_files_dct,f)
@@ -4422,10 +4478,59 @@ class RunMultiplePEs():
 
 class MultiModelFit():
     '''
-    Take a project directory containing all copasi files
-    and data files that you want to fit simultaneously and 
+    Coordinate a systematic multi model fitting parameter estimation and 
+    compare results using AIC/BIC. 
     
+    Usage: 
+        1):
+            Setup a new folder containing all models that you would like to fit
+            and all data you would like to fit to the model. Do not have any 
+            other text or csv files in this folder as python will try and setup
+            fits for them. Data files must have 'Time' in the left column
+            and each subsequent column must be titled with a variable name mapping 
+            to a model entity exactly (watch out for trailing spaces). It is 
+            reccommended to supply a plain text file detailing the common 
+            component between the models and what is different between each model. 
+            This however should not be saved as a .txt file or python will 
+            try and map it to the models. Just save the 'ReadMe' without an extention
+            to avoid this problem.
+            
+                i.e.:
+                    ./project_dir
+                        --Exp data 1
+                        --Exp data n
+                        --Model1.cps
+                        --Model2.cps
 
+        2):
+            Instantiate instance of the MultiModelFit class with all relevant 
+            keywords. Relevant keywords are described in the ParameterEstimation
+            or RunMultiplePEs classes. As non-optional arguments this takes the absolute path 
+            to the project directory that you created in step 1. 
+            Python automatically creates subdirectories  for each model in your 
+            model selection problem and maps all data files in the main directory 
+            to each of the models. 
+        3):
+            Use the write_item_template() method to create a spreadsheet containing
+            your a config file with it instructions. By default, all ICs and all kinetic (global or local)
+            parameters are included. Delete entries that you would like to keep fixed. Do not 
+            modify the last columns which contain xml code for that variable. 
+        4): 
+            Once each model folder has a config file specific for that model
+            use the set_up() method. Then open one of the child copasi files
+            in order to check that things are configured how you'd like them before 
+            using the run() method. 
+            
+            
+        **kwargs:
+            CopyNumber:
+                Default = 1. This is how many times to copy a copasi file before
+                running the parameter estimation on each model. 
+            NumberOfPEs:
+                Default = 3. How many parameter estimations to perform in one model. 
+                i.e. a repeat scan task is automatically configured. 
+                
+            All other kwargs are described in RunMultiplePEs or ParameterEstimation
     '''
     def __init__(self,project_config,outdir,**kwargs):
         self.outdir=outdir
@@ -4672,24 +4777,37 @@ class MultiModelFit():
         
             
 if __name__=='__main__':
-    class FilePaths():
-        def __init__(self):
-            self.dire=r'/home/b3053674/Documents/Models/MinimalTGFbetaModel/Fit3'
-    #        self.dire='/sharedlustre/users/a8021862/Ciaran/MinimalTGFbetaModel/Fit2'
-            self.copasi_file=os.path.join(self.dire,'M3.cps')
-            self.data_file=os.path.join(self.dire,'FittingData.csv')
-            self.pSmad3_data_file=os.path.join(self.dire,'pSmad3data.csv')
-            self.PEData=os.path.join(self.dire,'MultipleParameterEsimationAnalysis')
-            self.parameter_file=os.path.join(self.dire,'MultipleParameterEsimationAnalysis/Fit30.txt')
-        
-    F=FilePaths()
-    #
-    config=r'M3.ConfigFile.xlsx'
+    f=r'/home/b3053674/Documents/PyCoTools/PyCoTools/PyCoToolsTutorial/Kholodenko.cps'
+    d='/home/b3053674/Documents/PyCoTools/PyCoTools/PyCoToolsTutorial/InsertParametersEstimationData.txt'
     
-#    PE=pycopi.ParameterEstimation(F.copasi_file,[F.data_file,F.pSmad3_data_file],
+#    print os.path.isfile(f)
+    
+#    print os.path.isfile(d)
+    
+#    R=RunMultiplePEs(f,d,CopyNumber=1)
+#    R.write_config_template()
+#    R.set_up()
+#    R.run()
+#    R.run()
+    
+#    class FilePaths():
+#        def __init__(self):
+#            self.dire=r'/home/b3053674/Documents/Models/MinimalTGFbetaModel/Fit3'
+#    #        self.dire='/sharedlustre/users/a8021862/Ciaran/MinimalTGFbetaModel/Fit2'
+#            self.copasi_file=os.path.join(self.dire,'M3.cps')
+#            self.data_file=os.path.join(self.dire,'FittingData.csv')
+#            self.pSmad3_data_file=os.path.join(self.dire,'pSmad3data.csv')
+#            self.PEData=os.path.join(self.dire,'MultipleParameterEsimationAnalysis')
+#            self.parameter_file=os.path.join(self.dire,'MultipleParameterEsimationAnalysis/Fit30.txt')
+#        
+#    F=FilePaths()
+#    #
+#    config=r'M3.ConfigFile.xlsx'
+#    
+#    PE=ParameterEstimation(F.copasi_file,[F.data_file,F.pSmad3_data_file],
 #                                         Method='CurrentSolutionStatistics',
 #                                         RandomizeStartValues='false',
-#                                         Plot='true',
+#                                         Plot='true',SaveFig='true',
 #                                         )
 #    PE.set_up()
 #    PE.run()
@@ -4715,7 +4833,7 @@ if __name__=='__main__':
 #        plt.plot(TC.data['Time'],TC.data[i])
 #        
         
-#    PlotPEData(F.copasi_file,[F.data_file,F.pSmad3_data_file],
+#    PEAnalysis.PlotPEData(F.copasi_file,[F.data_file,F.pSmad3_data_file],
 #               F.parameter_file,Plot='true')
     
 

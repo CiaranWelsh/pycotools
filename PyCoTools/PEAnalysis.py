@@ -89,7 +89,7 @@ class ParsePEData():
         #change directory
         LOG.info('Parsing data from {} into python'.format(self.results_path))
         assert os.path.exists(self.results_path),'{} does not exist'.format(self.results_path)
-        self.cwd=os.path.dirname(self.results_path)
+        self.cwd=os.path.dirname(os.path.abspath(self.results_path))
         os.chdir(self.cwd)
         self.pickle_path=PicklePath
         if self.pickle_path==None:
@@ -309,7 +309,7 @@ class TruncateData():
         X:
             Either Xth percentive or value to truncate data below. 
     '''
-    def __init__(self,data,TruncateMode='tolerance',X=100,Tolerance=0.001):
+    def __init__(self,data,TruncateMode='percent',X=100,Tolerance=0.001):
         self.data=data
         self.TruncateMode=TruncateMode        
         self.X=X
@@ -1359,7 +1359,7 @@ class PlotPEData(object):
                  'LegendLoc':(1,0),
                  'OutputDirectory':os.path.join(os.path.dirname(self.copasi_file),'ParameterEstimationPlots'),
                  'Plot':'true',                 
-                 'Separator':'\t',
+                 'Separator':['\t']*len(self.experiment_files),
                  
                  }
                  
@@ -1620,7 +1620,7 @@ class PlotPEData(object):
         '''
         for f in self.experiment_files:
             dire,p= os.path.split(f)
-            fle=os.path.splitext(p)[0]
+            fle=os.path.splitext(p)[0]  
             self.plot1file(f)
 
     
@@ -1629,13 +1629,12 @@ class ModelSelection():
     '''
     ## could give
     '''
-    def __init__(self,multi_model_fit,model_selection_filename=None):
+    def __init__(self,multi_model_fit):
         LOG.debug('Instantiate ModelSelection class')
         self.multi_model_fit=multi_model_fit
         self.number_models=self.get_num_models()
-        self.model_selection_filename=model_selection_filename
-        if self.model_selection_filename==None:
-            self.model_selection_filename=os.path.join(self.multi_model_fit.wd,'ModelSelectionData.xlsx')
+#        if self.model_selection_filename==None:
+#            self.model_selection_filename=os.path.join(self.multi_model_fit.wd,'ModelSelectionData.xlsx')
         self.results_folder_dct=self._get_results_directories()
         self._PED_dct=self._parse_data()
         self.GMQ_dct=self._get_GMQ_dct()
@@ -1648,8 +1647,8 @@ class ModelSelection():
     def get_num_models(self):
         return len(self.multi_model_fit.cps_files)
     ## void
-    def to_excel(self):
-        self.model_selection_data.to_excel(self.model_selection_filename)
+    def to_excel(self,filename):
+        self.model_selection_data.to_excel(filename)
         
     def _get_results_directories(self):
         '''
@@ -1874,7 +1873,7 @@ class ModelSelection():
         fit_analysis_script_name=os.path.join(scripts_folder,'fit_analysis.py')
         LOG.debug('fit analysis script on your computer is at \t\t{}'.format(fit_analysis_script_name))
 
-        return Popen('python {} {} -tol {}'.format(fit_analysis_script_name,results_path,Tolerance))
+        return Popen(['python',fit_analysis_script_name,results_path,'-tol', Tolerance])
 #        
     def compare_sim_vs_exp(self):
         '''

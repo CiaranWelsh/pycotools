@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#! -*- coding: utf-8 -*-
 """
 
  This file is part of PyCoTools.
@@ -36,8 +36,8 @@ import  setuptools
 
 #version
 MAJOR = 3
-MINOR = 3
-MICRO = 50
+MINOR = 4
+MICRO = 3
 
 #=======
 __version__ = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
