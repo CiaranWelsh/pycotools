@@ -117,7 +117,7 @@ P.PEAnalysis.PlotBoxplot(args.path,
                          Log10='true',
                          FontSize=args.FontSize,
                          AxisSize=args.AxisSize,
-                         Tolernce=args.tol)
+                         Tolerance=args.tol)
 
 P.PEAnalysis.PlotHexMap(args.path,
                         SaveFig='true',
