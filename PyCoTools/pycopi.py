@@ -3865,6 +3865,7 @@ class InsertParameters():
         
 #        self.check_parameter_consistancy()
         self.parameters=self.get_parameters()   
+        LOG.info('Best Estimated Parameters: {}'.format(self.parameters.transpose()))
         self.parameters= self.replace_gl_and_lt()
         self.insert_all()
         #change
