@@ -136,9 +136,7 @@ class ProfileLikelihood():
         self.GMQ=pycopi.GetModelQuantities(self.copasi_file)
         os.chdir(os.path.dirname(self.copasi_file))
 
-        default_outputML=os.path.split(self.copasi_file)[1][:-4]+'_Duplicate.cps'
         options={#report variables
-                 'OutputML':default_outputML,
                  'Save':'overwrite',
                  'Index':-1,
                  'ParameterPath':None,
@@ -146,7 +144,7 @@ class ProfileLikelihood():
                  'UpperBoundMultiplier':1000,
                  'LowerBoundMultiplier':1000,
                  'NumberOfSteps':10,
-                 'Log':'false',
+                 'Log':'true',
                  'IterationLimit':50,
                  'Tolerance':1e-5,
                  'Rho':0.2,
