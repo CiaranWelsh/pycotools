@@ -35,8 +35,8 @@ import  setuptools
 
 
 #version
-MAJOR = 3
-MINOR = 4
+MAJOR = 4
+MINOR = 0
 MICRO = 3
 
 #=======
