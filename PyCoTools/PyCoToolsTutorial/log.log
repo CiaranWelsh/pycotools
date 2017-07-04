@@ -1,4 +1,5 @@
 INFO:root:__init__:26:Initializing PyCoTools
+change
 INFO:root:__init__:27:Initializing logging System
 INFO:root:__init__:28:logging config file at: /home/b3053674/Documents/PyCoTools/PyCoTools/logging_config.conf
 DEBUG:PyCoTools.pycopi:pycopi:108:copasi file Kholodenko.cps has been parsed into Python
