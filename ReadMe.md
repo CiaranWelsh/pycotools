@@ -1,9 +1,21 @@
 # PyCoTools
 
-A set of tools for interacting with [COPASI simulation software](http://copasi.org/) from Python
+A set of tools for interacting with [COPASI simulation software](http://copasi.org/) from Python. 
 
-## [Tutorials and Documentation](http://pycotools.readthedocs.io/en/copasiversion21/)
+## Version Notice
+
+The code in this repo supports Python 2.7. For PyCoTools that works on Python 3 please see [this](https://github.com/CiaranWelsh/pycotools3) repo. As of Janurary 2019 the features are identical, but future modifications will only be applied to the Python 3 version. 
+
+
+## [Tutorials and Documentation](https://pycotools.readthedocs.io/en/latest/)
 
 ## <a href=https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/bty409/5001390>Publication</a>
 
-For support either post an issue or email c.welsh2@newcastle.ac.uk
+
+
+
+
+
+
+
+
