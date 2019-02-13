@@ -4,7 +4,7 @@ A set of tools for interacting with [COPASI simulation software](http://copasi.o
 
 ## Version Notice
 
-The code in this repo supports Python 2.7. For PyCoTools that works on Python 3 please see [<b>this repo</b>](https://github.com/CiaranWelsh/pycotools3). As of Janurary 2019 the features are identical, but future modifications will only be applied to the Python 3 version. 
+The code in this repo supports Python 2.7. For PyCoTools that works on Python 3 please see [<b>this repo</b>](https://github.com/CiaranWelsh/pycotools3). Note that while the code in this repository is stable, it is no longer maintained and users are recommended to use the Python 3 version.  
 
 
 ## [Tutorials and Documentation](https://pycotools.readthedocs.io/en/latest/)
