@@ -42,8 +42,12 @@ MICRO = 9
 
 __version__ = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
-
-
+##todo review tutorials and docs. Ensure accuracy.
+##todo review both repos. Refer readers to repo for python 3 version.
+##todo write docs for sensitivity analysis.
+##todo Write that contributions are welcome.
+##todo make use of beautiful soup, if appropriate.
+##todo remove the latex stuff. Add dash app support.
 setup(
   name='pycotools',
   packages=['pycotools'], # this must be the same as the name above
@@ -52,7 +56,7 @@ setup(
   author='Ciaran Welsh',
   requires=['lxml', 'argparse', 'pandas', 'numpy', 'scipy',
             'matplotlib', 'scipy', 'seaborn', 'sklearn',
-            'retrying'],
+            'retrying', 'psutil'],
   package_data={'pycotools':['*.py',
                              'Licence.txt',
                              'Tests/*.py',
@@ -60,8 +64,8 @@ setup(
                 # 'docs': ['build/*'],
                 # 'Tests': ['*.py']
                 },
-  author_email='c.welsh2@newcastle.ac.uk',
-  url='https://github.com/CiaranWelsh/PyCoTools',
+  author_email='ciaran.welsh@newcastle.ac.uk',
+  url='https://github.com/CiaranWelsh/pycotools3',
 
   keywords=['systems biology', 'modelling', 'biological',
             'networks', 'copasi', 'identifiability analysis', 'profile likelihood'],

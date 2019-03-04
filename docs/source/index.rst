@@ -6,6 +6,8 @@
 Pycotools's Documentation
 ==========================
 
+This documentation is for [pycotools](https://github.com/CiaranWelsh/pycotools), not [pycotools3](https://github.com/CiaranWelsh/pycotools3). One of the main differences is that pycotools works on Python 2.7 while pycotools3 works on Python 3. pycotools and pycotools3 are separate projects, but only pycotools3 will be maintained and developed further. For this reason users are encouraged to use pycotools3, the documentation for which can be found [here](https://pycotools3.readthedocs.io/en/latest/?badge=master). The code in this repository does however still work and is fully tested on COPASI version 4.24. 
+
 
 QuickStart
 ==========
