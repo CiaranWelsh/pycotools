@@ -23,12 +23,7 @@ logging.config.fileConfig(LOG_CONFIG_FILE,
 
 LOG = logging.getLogger('root')
 
+LOG.warning('While still operational, this version of PyCoTools is no longer being '
+            'developed. For the latest version, please see "https://github.com/CiaranWelsh/pycotools3"')
 
 
-# global __version__
-# #version
-# MAJOR = 1
-# MINOR = 0
-# MICRO = 3
-#
-# __version__ = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
